@@ -1,0 +1,111 @@
+.body{
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #494949;
+    color: #cd8317;
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    padding: 3px;
+}
+div{
+    background-color: #3a3a3a;
+}
+.inLog{
+    float: left;
+    margin-left: 40%;
+    margin-top: 5%;
+    background-color: #3a3a3a;
+    padding: 20px 10px 20px 10px;
+}
+.leftBlock{
+    float: left;
+    width: 20%;
+    height: 90%;
+    text-align: center;
+    padding: 5px;
+}
+.centerBlock{
+    margin: 0 21% 0 21%;
+    height: 100%;
+    width: 58%;
+    position: fixed;
+}
+.rightBlock{
+    text-align: center;
+    float: right;
+    width: 20%;
+    padding: 5px;
+}
+.mailHistory{
+    padding: 10px 10px 10px 10px;
+    overflow-y: auto;
+    border-bottom-style: solid;
+    height: 70%;
+}
+.mailInput{
+    padding: 10px;
+}
+.mail{
+    border-style: ridge;
+    border-width: 1px;
+    margin: 10px 0px;
+    padding: 5px;
+}
+header{
+    text-align: right;
+}
+textarea{
+    width: 98%;
+}
+img{
+    margin: 10px 10px 10px 10px;
+}
+a{
+    color: red;
+    text-decoration: none;
+}
+.circle{
+    float: left;
+    width: 40px;
+    height: 40px;
+    background: #cc0000;
+    -moz-border-radius: 50px;
+    -webkit-border-radius: 50px;
+    border-radius: 50px;
+}
+.del{
+    float: right;
+    visibility: hidden;
+}
+.rec{
+    float: right;
+    visibility: hidden;
+}
+textarea{
+    background-color: #3a3a3a;
+    color: #cd8317;
+}
+.emailText {
+    background-color: #3a3a3a;
+    color: #cd8317;
+    border-style: solid;
+    border-width: 1px;
+    padding: 10px;
+}
+.friendList{
+    padding: 1px;
+    border-style: solid;
+    border-width: 2px;
+}
+.dialogList{
+    padding: 1px;
+    border-style: solid;
+    border-width: 2px;
+}
+.dialogNode{
+    margin: 1px;
+    border-style: solid;
+    border-width: 1px;
+}
