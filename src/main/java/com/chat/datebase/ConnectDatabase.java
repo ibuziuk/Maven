@@ -17,8 +17,8 @@ import java.util.TreeSet;
 
 public class ConnectDatabase{
     private Connection connectBase = null;
-    private TreeMap<Integer,ArrayList<JSONObject>> timingMails;
-    private TreeSet<Integer> timingDialog;
+    private static TreeMap<Integer,ArrayList<JSONObject>> timingMails;
+    private static TreeSet<Integer> timingDialog;
     private int userID(String log){
         String command = "SELECT*FROM users WHERE login = '"+log+"'";
         try{
@@ -26,16 +26,14 @@ public class ConnectDatabase{
             ResultSet rs = st.executeQuery(command);
             while (rs.next())
             {
-                int t =  rs.getInt(3);
-                st.close();
+                int t =  rs.getInt("userID");
                 return t;
             }
-            st.close();
         }catch (SQLException e){}
         return -1;
     }
     public String userName(int id){
-        String command = "SELECT*FROM users WHERE ID = '"+id+"'";
+        String command = "SELECT*FROM users WHERE ID = "+id;
         try{
             Statement st = connectBase.createStatement();
             ResultSet rs = st.executeQuery(command);
@@ -45,55 +43,37 @@ public class ConnectDatabase{
                 st.close();
                 return t;
             }
-            st.close();
         }catch (SQLException e){}
         return null;
     }
     public ConnectDatabase(){
-        /*try{
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-            System.out.println("Driver loading success!");
-        } catch (Exception e){
-            String s =e.toString();
-        }*/
         try{
             InitialContext initContext= new InitialContext();
             DataSource ds = (DataSource) initContext.lookup("java:comp/env/jdbc/blackchat");
             connectBase = ds.getConnection();
         } catch (Exception e){}
-        timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
-        timingDialog = new TreeSet<Integer>();
+        if(timingDialog == null && timingMails == null ) {
+            timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
+            timingDialog = new TreeSet<Integer>();
+        }
     }
     public void addUser(String log, String psw){
         String md5Psw = DigestUtils.md5Hex(psw);
-        String command = "INSERT INTO users (login, psw) VALUES('"+log+"','"+md5Psw+"')";
         try{
             Statement st = connectBase.createStatement();
-            st.executeUpdate(command);
-            st.close();
-        }catch (SQLException e){}
-    }
-    public void destroy(){
-        try{
-            connectBase.close();
+            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + md5Psw + "')");
         }catch (SQLException e){}
     }
     public int containsUser(String log, String psw){
         String md5Psw = DigestUtils.md5Hex(psw);
-        String command = "SELECT*FROM users WHERE login = '"+log+"'";
         try{
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery(command);
+            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '"+log+"' AND psw = '"+md5Psw+"'");
             while (rs.next())
             {
-                String s = rs.getString("psw");
-                if(md5Psw.equals(s)) {
-                    int t =  rs.getInt(3);
-                    st.close();
-                    return t;
-                }
+                int t =  rs.getInt("userID");
+                return t;
             }
-            st.close();
         }catch (SQLException e){}
         return -1;
     }
@@ -101,15 +81,11 @@ public class ConnectDatabase{
         timingDialog.add(Integer.parseInt(firstID));
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT*FROM dialog WHERE dialogID =(SELECT MAX(dialogID) FROM dialog)");
+            st.executeUpdate("INSERT INTO dialogs VALUE ()");
+            ResultSet rs = st.executeQuery("SELECT last_insert_id() AS last_id FROM dialogs");
             rs.next();
-            int dialogID = rs.getInt("dialogID") + 1;
-            st.executeUpdate("INSERT INTO dialog (id, dialogID) VALUE ("+id+","+dialogID+")");
-            st.executeUpdate("INSERT INTO dialog (id, dialogID) VALUE ("+firstID+","+dialogID+")");
-            st.executeUpdate("CREATE TABLE dialog"+dialogID+"(id INT )");
-            st.executeUpdate("INSERT INTO dialog"+dialogID+" (id) VALUE ("+id+")");
-            st.executeUpdate("INSERT INTO dialog"+dialogID+" (id) VALUE ("+firstID+")");
-            st.executeUpdate("INSERT INTO mail (userID, dialogID, mailID, text) VALUE (-1,"+dialogID+",-1,'a')");
+            int id_dialog = rs.getInt("last_id");
+            st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE ("+id+","+id_dialog+")");
         }catch (SQLException e){}
     }
     public void addNewUserDialog(JSONObject object){
@@ -118,36 +94,21 @@ public class ConnectDatabase{
         timingDialog.add(Integer.parseInt(userID));
         try{
             Statement st = connectBase.createStatement();
-            st.executeUpdate("INSERT INTO dialog (id, dialogID) VALUE ("+userID+","+dialogID+")");
-            st.executeUpdate("INSERT INTO dialog"+dialogID+"(id) VALUE ("+userID+")");
+            st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE ("+userID+","+dialogID+")");
         }catch (SQLException e){}
     }
-    public void addMail(int id, JSONObject object){
+    public int  addMail(int id, JSONObject object){
         String dialogID = (String) object.get("dialogID");
         String text = (String) object.get("text");
         object.put("userName",userName(id));
         try{
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT*FROM mail WHERE mailID =(SELECT MAX(mailID) FROM mail  WHERE dialogID="+dialogID+")");
+            st.executeUpdate("INSERT INTO mails (dialogID, userID, text) VALUE ("+dialogID+","+id+",'"+text+"')");
+            ResultSet rs = st.executeQuery("SELECT last_insert_id() AS last_id FROM mails");
             rs.next();
-            int mailID = rs.getInt("mailID") + 1;
-            st.executeUpdate("INSERT INTO mail (userID, dialogID, mailID, text) VALUE " +
-                    "("+id+","+dialogID+","+mailID+",'"+text+"')");
-            ResultSet resultSet = st.executeQuery("SELECT * FROM dialog"+dialogID);
-            while (resultSet.next()){
-                int userID = resultSet.getInt("id");
-                if(userID != id) {
-                    ArrayList<JSONObject> arrayList = timingMails.get(userID);
-                    if (arrayList == null) {
-                        arrayList = new ArrayList<JSONObject>();
-                        arrayList.add(object);
-                        timingMails.put(userID, arrayList);
-                    } else {
-                        arrayList.add(object);
-                    }
-                }
-            }
+            return rs.getInt("last_id");
         }catch (SQLException e){}
+        return -1;
     }
     public JSONArray respUser(int id){
         JSONArray array = new JSONArray();
@@ -174,21 +135,23 @@ public class ConnectDatabase{
         JSONArray array = new JSONArray();
         try{
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT *FROM dialog WHERE id="+id);
-            while (rs.next()){
+            ResultSet rs = st.executeQuery("SELECT dialogID FROM users_dialogs WHERE userID = "+id);
+            while (rs.next()) {
                 JSONObject object = new JSONObject();
-                int dialogID= rs.getInt("dialogID");
+                int dialogID = rs.getInt("dialogID");
                 object.put("dialogID",dialogID);
-                Statement stSecond = connectBase.createStatement();
-                ResultSet result = stSecond.executeQuery("SELECT * FROM dialog"+dialogID);
-                result.next();
-                String users = userName(result.getInt("id"));
-                while (result.next()){
-                    users+= "<br>"+userName(result.getInt("id"));
+                Statement statement = connectBase.createStatement();
+                ResultSet resultSet = statement.executeQuery("SELECT users.login AS 'login'  FROM users_dialogs " +
+                        "JOIN users ON users.userID = users_dialogs.userID WHERE users_dialogs.dialogID = "+dialogID);
+                String arrayUsers = new String();
+                resultSet.next();
+                arrayUsers += resultSet.getString("login");
+                while ( resultSet.next()) {
+                    arrayUsers +="<br>"+ resultSet.getString("login");
                 }
-                object.put("massUsers",users);
-                array.add(object);
+                object.put("massUsers", arrayUsers);
             }
+
         }catch (SQLException e){}
         return array;
     }
@@ -196,18 +159,8 @@ public class ConnectDatabase{
         JSONArray array = new JSONArray();
         try{
             Statement st = connectBase.createStatement();
-            ResultSet rt = st.executeQuery("SELECT * FROM dialog WHERE id="+id);
+            ResultSet rt = st.executeQuery();
             while (rt.next()){
-                int dialogID = rt.getInt("dialogID");
-                Statement stSecond = connectBase.createStatement();
-                ResultSet resultSet = stSecond.executeQuery("SELECT * FROM mail WHERE dialogID="+dialogID+" ORDER BY mailID");
-                while (resultSet.next()){
-                    JSONObject object = new JSONObject();
-                    object.put("userName",userName(resultSet.getInt("userID")));
-                    object.put("dialogID",dialogID);
-                    object.put("text",(resultSet.getString("text")));
-                    array.add(object);
-                }
             }
         }catch (SQLException e){}
         return array;
