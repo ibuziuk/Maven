@@ -8,34 +8,37 @@
 <div class="body">
     <header>
         <h1>
-            <div class="circle"> </div>
+            <div class="circle"></div>
             BlackChat
         </h1>
     </header>
     <div class="leftBlock">
         <img width="80" height="80" src="styles/avatar.PNG">
         <br><br>
-        <h3 id = "nameUser">none</h3>
+
+        <h3 id="nameUser">none</h3>
+
         <div align="right">
-            <button onmousedown="renameUser()" >Изменить имя</button>
+            <button onmousedown="renameUser()">Изменить имя</button>
         </div>
     </div>
     <div class="rightBlock">
-        <img src="styles/avatar.PNG" width="80" height="80" >
+        <img src="styles/avatar.PNG" width="80" height="80">
+
         <h3 class="partner">none</h3>
         <button onmousedown="addNewUser()">add new user</button>
         FriendList:
         <div class="friendList"></div>
         dialogList:
-        <div class = "dialogList"></div>
+        <div class="dialogList"></div>
     </div>
-    <div class="centerBlock" >
+    <div class="centerBlock">
         <div class="mailHistory">
         </div>
-        <div class = "mailInput" align="right">
+        <div class="mailInput" align="right">
             <textarea name="email" placeholder="Введите сообщение"></textarea>
             <br>
-            <button name = "send" onclick="sendEmail()">Отправить</button>
+            <button name="send" onclick="sendEmail()">Отправить</button>
         </div>
     </div>
     <script src="script/script.js"></script>

@@ -1,4 +1,4 @@
-.body{
+.body {
     position: fixed;
     top: 0;
     left: 0;
@@ -9,64 +9,77 @@
     margin: 0px;
     padding: 3px;
 }
-div{
+
+div {
     background-color: #3a3a3a;
 }
-.inLog{
+
+.inLog {
     float: left;
     margin-left: 40%;
     margin-top: 5%;
     background-color: #3a3a3a;
     padding: 20px 10px 20px 10px;
 }
-.leftBlock{
+
+.leftBlock {
     float: left;
     width: 20%;
     height: 90%;
     text-align: center;
     padding: 5px;
 }
-.centerBlock{
+
+.centerBlock {
     margin: 0 21% 0 21%;
     height: 100%;
     width: 58%;
     position: fixed;
 }
-.rightBlock{
+
+.rightBlock {
     text-align: center;
     float: right;
     width: 20%;
     padding: 5px;
 }
-.mailHistory{
+
+.mailHistory {
     padding: 10px 10px 10px 10px;
     overflow-y: auto;
     border-bottom-style: solid;
     height: 70%;
 }
-.mailInput{
+
+.mailInput {
     padding: 10px;
 }
-.mail{
+
+.mail {
     border-style: ridge;
     border-width: 1px;
     margin: 10px 0px;
     padding: 5px;
 }
-header{
+
+header {
     text-align: right;
 }
-textarea{
+
+textarea {
     width: 98%;
 }
-img{
+
+img {
     margin: 10px 10px 10px 10px;
 }
-a{
+
+a {
     color: red;
     text-decoration: none;
 }
-.circle{
+
+.circle {
     float: left;
     width: 40px;
     height: 40px;
@@ -75,18 +88,22 @@ a{
     -webkit-border-radius: 50px;
     border-radius: 50px;
 }
-.del{
+
+.del {
     float: right;
     visibility: hidden;
 }
-.rec{
+
+.rec {
     float: right;
     visibility: hidden;
 }
-textarea{
+
+textarea {
     background-color: #3a3a3a;
     color: #cd8317;
 }
+
 .emailText {
     background-color: #3a3a3a;
     color: #cd8317;
@@ -94,17 +111,20 @@ textarea{
     border-width: 1px;
     padding: 10px;
 }
-.friendList{
+
+.friendList {
     padding: 1px;
     border-style: solid;
     border-width: 2px;
 }
-.dialogList{
+
+.dialogList {
     padding: 1px;
     border-style: solid;
     border-width: 2px;
 }
-.dialogNode{
+
+.dialogNode {
     margin: 1px;
     border-style: solid;
     border-width: 1px;

@@ -12,15 +12,18 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 @WebServlet(urlPatterns = "/ChatListener")
 public class ChatListener extends HttpServlet {
     private JSONParser jsonParser = null;
     private static ConnectDatabase con = null;
+
     @Override
     public void init() throws ServletException {
-        if(con == null){
+        if (con == null) {
             con = new ConnectDatabase();
         }
         jsonParser = new JSONParser();
@@ -31,21 +34,21 @@ public class ChatListener extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setCharacterEncoding("UTF-8");
         Cookie[] massCook = req.getCookies();
-        int id =-1;
-        for(Cookie c: massCook){
-            if(c.getName().equals("user")){
+        int id = -1;
+        for (Cookie c : massCook) {
+            if (c.getName().equals("user")) {
                 id = Integer.parseInt(c.getValue());
             }
         }
-        if(id == -1)
+        if (id == -1)
             return;
         PrintWriter out = resp.getWriter();
-        if(con.isNewDialog(id)){
+        if (con.isNewDialog(id)) {
             resp.setStatus(resp.SC_RESET_CONTENT);
             return;
         }
         JSONArray array = con.respClient(id);
-        if(array==null) {
+        if (array == null) {
             resp.setStatus(resp.SC_NOT_MODIFIED);
             return;
         }
@@ -55,13 +58,13 @@ public class ChatListener extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Cookie[] massCook = req.getCookies();
-        int id =-1;
-        for(Cookie c: massCook){
-            if(c.getName().equals("user")){
+        int id = -1;
+        for (Cookie c : massCook) {
+            if (c.getName().equals("user")) {
                 id = Integer.parseInt(c.getValue());
             }
         }
-        if(id == -1)
+        if (id == -1)
             return;
         StringBuffer js = new StringBuffer();
         String line;
@@ -69,13 +72,15 @@ public class ChatListener extends HttpServlet {
             BufferedReader reader = req.getReader();
             while ((line = reader.readLine()) != null)
                 js.append(line);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
         JSONObject jObject = new JSONObject();
-        try{
-            jObject =(JSONObject) jsonParser.parse(js.toString());
-        }catch (ParseException e){}
-        if(jObject.containsKey("flag")) {
+        try {
+            jObject = (JSONObject) jsonParser.parse(js.toString());
+        } catch (ParseException e) {
+        }
+        if (jObject.containsKey("flag")) {
             String str = jObject.get("flag").toString();
             if (str != null && str.equals("1")) {
                 PrintWriter out = resp.getWriter();
@@ -92,7 +97,7 @@ public class ChatListener extends HttpServlet {
                 out.print(con.respMail(id));
                 return;
             }
-            if(jObject.containsKey("id")) {
+            if (jObject.containsKey("id")) {
                 String strSecond = jObject.get("id").toString();
                 if (str != null && str.equals("4")) {
                     con.createNewDialog(id, strSecond);
@@ -104,6 +109,6 @@ public class ChatListener extends HttpServlet {
                 }
             }
         }
-        con.addMail(id,jObject);
+        con.addMail(id, jObject);
     }
 }

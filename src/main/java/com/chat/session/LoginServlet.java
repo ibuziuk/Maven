@@ -14,20 +14,19 @@ import java.io.PrintWriter;
 
 @WebServlet(urlPatterns = "/loginServlet")
 public class LoginServlet extends HttpServlet {
-    protected void doPost(HttpServletRequest request,HttpServletResponse response)throws ServletException,IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String user = request.getParameter("user");
         String psw = request.getParameter("pwd");
         ConnectDatabase con = new ConnectDatabase();
-        int userID = con.containsUser(user,psw);
-        if(userID != 0) {
-            Cookie logCookie = new Cookie("user",""+userID);
-            logCookie.setMaxAge(60*60);
+        int userID = con.containsUser(user, psw);
+        if (userID != 0) {
+            Cookie logCookie = new Cookie("user", "" + userID);
+            logCookie.setMaxAge(60 * 60);
             response.addCookie(logCookie);
             response.sendRedirect("chat.html");
-        }
-        else {
+        } else {
             RequestDispatcher rd = getServletContext().getRequestDispatcher("/index.html");
-            PrintWriter out= response.getWriter();
+            PrintWriter out = response.getWriter();
             out.println("<font color=red>Either user name or password is wrong.</font>");
             rd.include(request, response);
         }
