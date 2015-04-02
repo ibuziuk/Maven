@@ -1,8 +1,9 @@
 package com.chat.datebase;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+//import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
@@ -62,19 +63,21 @@ public class ConnectDatabase {
     }
 
     public void addUser(String log, String psw) {
-        String md5Psw = DigestUtils.md5Hex(psw);
+        //PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        //String hashedPsw = passwordEncoder.encode(psw);
         try {
             Statement st = connectBase.createStatement();
-            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + md5Psw + "')");
+            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + psw + "')");
         } catch (SQLException e) {
         }
     }
 
     public int containsUser(String log, String psw) {
-        String md5Psw = DigestUtils.md5Hex(psw);
+        //PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        //String hashedPsw = passwordEncoder.encode(psw);
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log + "' AND psw = '" + md5Psw + "'");
+            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log + "' AND psw = '" + psw + "'");
             while (rs.next()) {
                 int t = rs.getInt("userID");
                 return t;
@@ -120,6 +123,14 @@ public class ConnectDatabase {
             return rs.getInt("last_id");
         } catch (SQLException e) {
         }
+        ArrayList<JSONObject> arrayList = timingMails.get(id);
+        if (arrayList == null) {
+            arrayList = new ArrayList<JSONObject>();
+            arrayList.add(object);
+            timingMails.put(id, arrayList);
+        } else {
+            arrayList.add(object);
+        }
         return -1;
     }
 
@@ -131,7 +142,7 @@ public class ConnectDatabase {
             while (rs.next()) {
                 JSONObject object = new JSONObject();
                 object.put("name", rs.getString("login"));
-                int usrerID = rs.getInt("ID");
+                int usrerID = rs.getInt("userID");
                 object.put("userID", usrerID);
                 if (usrerID == id) {
                     object.put("flag", "1");
@@ -175,8 +186,19 @@ public class ConnectDatabase {
         JSONArray array = new JSONArray();
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rt = st.executeQuery("");
+            ResultSet rt = st.executeQuery("SELECT dialogID FROM users_dialogs WHERE userID = " + id);
             while (rt.next()) {
+                int dialogID = rt.getInt("dialogID");
+                Statement statement = connectBase.createStatement();
+                ResultSet resultSet = statement.executeQuery("SELECT userID, mailID, text FROM mails" +
+                        " WHERE dialogID = " + dialogID + " ORDER BY mailID");
+                while (resultSet.next()) {
+                    JSONObject object = new JSONObject();
+                    object.put("userName", userName(resultSet.getInt("userID")));
+                    object.put("dialogID", dialogID);
+                    object.put("text", (resultSet.getString("text")));
+                    array.add(object);
+                }
             }
         } catch (SQLException e) {
         }
