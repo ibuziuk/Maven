@@ -35,10 +35,9 @@ public class ConnectDatabase {
     }
 
     public String userName(int id) {
-        String command = "SELECT*FROM users WHERE ID = " + id;
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery(command);
+            ResultSet rs = st.executeQuery("SELECT login FROM users WHERE userID = " + id);
             while (rs.next()) {
                 String t = rs.getString("login");
                 st.close();
@@ -96,6 +95,7 @@ public class ConnectDatabase {
             rs.next();
             int id_dialog = rs.getInt("last_id");
             st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE (" + id + "," + id_dialog + ")");
+            st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE (" + firstID + "," + id_dialog + ")");
         } catch (SQLException e) {
         }
     }
@@ -175,6 +175,7 @@ public class ConnectDatabase {
                     arrayUsers += "<br>" + resultSet.getString("login");
                 }
                 object.put("massUsers", arrayUsers);
+                array.add(object);
             }
 
         } catch (SQLException e) {

@@ -29,11 +29,6 @@ function mouseOver() {
         }
     }
 }
-function renameUser() {
-    var text = prompt("Введите имя", "");
-    document.getElementById("nameUser").innerHTML = text;
-    storeUser(text);
-}
 function renameEmail(event) {
     if (event.target.classList.contains("rec")) {
         var mass = this.getElementsByTagName("div")[1];
