@@ -7,7 +7,7 @@ function uniqueID() {
 var mailList = [];
 function run() {
     startServer();
-    window.setInterval(connectServ, 500);
+    connectServ();
 }
 function mouseOut() {
     for (var j = 0; j < this.childNodes.length; j++) {
@@ -169,27 +169,31 @@ function connectServ() {
     req.send();
     req.onreadystatechange = function () {
         if (req.readyState == 4) {
+            var elem = document.getElementsByClassName("circle")[0];
+            if (req.status == 0) {
+                elem.style.backgroundColor = 'green';
+                connectServ();
+            }
             if (req.status == 200) {
-                var elem = document.getElementsByClassName("circle")[0];
+                connectServ();
                 elem.style.backgroundColor = 'green';
                 var items = JSON.parse(req.responseText);
                 if (items != null) {
-                    mailList.push(items);
-                    upload(items)
+                    if (items.update == 1) {
+                        startServer();
+                    }
+                    else {
+                        mailList.push(items);
+                        upload(items);
+                    }
                 }
                 return;
             }
-            if (req.status == 304) {
-                var elem = document.getElementsByClassName("circle")[0];
-                elem.style.backgroundColor = 'green';
+            else {
+                elem.style.backgroundColor = 'red';
+                window.setTimeout(connectServ, 100);
                 return;
             }
-            if (req.status == 205) {
-                startServer();
-                return;
-            }
-            var elem = document.getElementsByClassName("circle")[0];
-            elem.style.backgroundColor = 'red';
         }
     }
 }

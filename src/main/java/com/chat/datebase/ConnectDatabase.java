@@ -1,9 +1,8 @@
 package com.chat.datebase;
 
+import com.chat.longPolling.LongPolling;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-//import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
@@ -15,10 +14,15 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+//import org.springframework.security.crypto.password.PasswordEncoder;
+
 public class ConnectDatabase {
     private Connection connectBase = null;
-    private static TreeMap<Integer, ArrayList<JSONObject>> timingMails;
-    private static TreeSet<Integer> timingDialog;
+    private TreeMap<Integer, ArrayList<JSONObject>> timingMails = null;
+    private TreeSet<Integer> timingDialog = null;
+    private LongPolling poll = null;
+    final private String MESSEGE_DELETE = "this message has been removed";
 
     private int userID(String log) {
         String command = "SELECT*FROM users WHERE login = '" + log + "'";
@@ -48,16 +52,27 @@ public class ConnectDatabase {
         return null;
     }
 
+    public ConnectDatabase(LongPolling poll) {
+        try {
+            InitialContext initContext = new InitialContext();
+            DataSource ds = (DataSource) initContext.lookup("java:comp/env/jdbc/blackchat");
+            connectBase = ds.getConnection();
+        } catch (Exception e) {
+
+        }
+        if (timingDialog == null && timingMails == null) {
+            timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
+            timingDialog = new TreeSet<Integer>();
+        }
+        this.poll = poll;
+    }
+
     public ConnectDatabase() {
         try {
             InitialContext initContext = new InitialContext();
             DataSource ds = (DataSource) initContext.lookup("java:comp/env/jdbc/blackchat");
             connectBase = ds.getConnection();
         } catch (Exception e) {
-        }
-        if (timingDialog == null && timingMails == null) {
-            timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
-            timingDialog = new TreeSet<Integer>();
         }
     }
 
@@ -67,6 +82,19 @@ public class ConnectDatabase {
         try {
             Statement st = connectBase.createStatement();
             st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + psw + "')");
+            ResultSet rs = st.executeQuery("SELECT last_insert_id() AS last_id FROM mails");
+            rs.next();
+            int lastId = rs.getInt("last_id");
+            ResultSet resultSet = st.executeQuery("SELECT userID FROM users ");
+            while (resultSet.next()) {
+                int id = resultSet.getInt("userID");
+                if (lastId == id)
+                    continue;
+
+                if (!poll.respUpdateContent(id)) {
+                    timingDialog.add(id);
+                }
+            }
         } catch (SQLException e) {
         }
     }
@@ -87,7 +115,6 @@ public class ConnectDatabase {
     }
 
     public void createNewDialog(int id, String firstID) {
-        timingDialog.add(Integer.parseInt(firstID));
         try {
             Statement st = connectBase.createStatement();
             st.executeUpdate("INSERT INTO dialogs VALUE ()");
@@ -96,6 +123,12 @@ public class ConnectDatabase {
             int id_dialog = rs.getInt("last_id");
             st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE (" + id + "," + id_dialog + ")");
             st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE (" + firstID + "," + id_dialog + ")");
+            int[] arrayID = {id, Integer.parseInt(firstID)};
+            for (int a : arrayID) {
+                if (!poll.respUpdateContent(a)) {
+                    timingDialog.add(a);
+                }
+            }
         } catch (SQLException e) {
         }
     }
@@ -107,6 +140,13 @@ public class ConnectDatabase {
         try {
             Statement st = connectBase.createStatement();
             st.executeUpdate("INSERT INTO users_dialogs (userID, dialogID) VALUE (" + userID + "," + dialogID + ")");
+            ResultSet resultSet = st.executeQuery("SELECT userID FROM users_dialogs WHERE dialogID=" + dialogID);
+            while (resultSet.next()) {
+                int id = resultSet.getInt("userID");
+                if (!poll.respUpdateContent(id)) {
+                    timingDialog.add(id);
+                }
+            }
         } catch (SQLException e) {
         }
     }
@@ -120,21 +160,62 @@ public class ConnectDatabase {
             st.executeUpdate("INSERT INTO mails (dialogID, userID, text) VALUE (" + dialogID + "," + id + ",'" + text + "')");
             ResultSet rs = st.executeQuery("SELECT last_insert_id() AS last_id FROM mails");
             rs.next();
-            return rs.getInt("last_id");
+            int lastId = rs.getInt("last_id");
+            object.put("mailID", lastId);
+            ResultSet resultSet = st.executeQuery("SELECT userID FROM users_dialogs WHERE dialogID=" + dialogID);
+            while (resultSet.next()) {
+                int userID = resultSet.getInt("userID");
+                if (userID == id) {
+                    continue;
+                }
+                if (!poll.respMessage(userID, object)) {
+                    ArrayList<JSONObject> arrayList = timingMails.get(userID);
+                    if (arrayList == null) {
+                        arrayList = new ArrayList<JSONObject>();
+                        arrayList.add(object);
+                        timingMails.put(userID, arrayList);
+                    } else {
+                        arrayList.add(object);
+                    }
+                }
+            }
+            return lastId;
         } catch (SQLException e) {
         }
-        ArrayList<JSONObject> arrayList = timingMails.get(id);
-        if (arrayList == null) {
-            arrayList = new ArrayList<JSONObject>();
-            arrayList.add(object);
-            timingMails.put(id, arrayList);
-        } else {
-            arrayList.add(object);
-        }
+
         return -1;
     }
 
+    public void deleteMail(int userID, int dialogID, int mailID) {
+        try {
+            Statement st = connectBase.createStatement();
+            st.executeUpdate("UPDATE mails SET text ='" + MESSEGE_DELETE + "'" +
+                    "WHERE dialogID =" + dialogID + ", mailID =" + mailID);
+            ResultSet resultSet = st.executeQuery("SELECT userID FROM users_dialogs WHERE dialogID =" + dialogID);
+            while (resultSet.next()) {
+                int id = resultSet.getInt("userID");
+                if (id == userID) {
+                    continue;
+                }
+                JSONObject object = poll.respDelete(id, dialogID, mailID, MESSEGE_DELETE);
+                if (object != null) {
+                    ArrayList<JSONObject> arrayList = timingMails.get(userID);
+                    if (arrayList == null) {
+                        arrayList = new ArrayList<JSONObject>();
+                        arrayList.add(object);
+                        timingMails.put(userID, arrayList);
+                    } else {
+                        arrayList.add(object);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+        }
+    }
+
     public JSONArray respUser(int id) {
+        timingMails.remove(id);
+        timingDialog.remove(id);
         JSONArray array = new JSONArray();
         try {
             Statement st = connectBase.createStatement();

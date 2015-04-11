@@ -1,11 +1,15 @@
 package com.chat.session;
 
 import com.chat.datebase.ConnectDatabase;
+import com.chat.longPolling.LongPolling;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
@@ -16,16 +20,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-@WebServlet(urlPatterns = "/ChatListener")
+@WebServlet(urlPatterns = "/ChatListener", asyncSupported = true)
 public class ChatListener extends HttpServlet {
     private JSONParser jsonParser = null;
-    private static ConnectDatabase con = null;
+    private ConnectDatabase con = null;
+    private LongPolling longPolling = null;
 
     @Override
     public void init() throws ServletException {
-        if (con == null) {
-            con = new ConnectDatabase();
-        }
+        longPolling = new LongPolling();
+        con = new ConnectDatabase(longPolling);
         jsonParser = new JSONParser();
         super.init();
     }
@@ -44,15 +48,40 @@ public class ChatListener extends HttpServlet {
             return;
         PrintWriter out = resp.getWriter();
         if (con.isNewDialog(id)) {
-            resp.setStatus(resp.SC_RESET_CONTENT);
+            JSONObject object = new JSONObject();
+            object.put("update", "1");
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("UTF-8");
+            byte[] arrayByte = object.toJSONString().getBytes();
+            resp.setContentLength(arrayByte.length);
+            resp.getOutputStream().write(arrayByte);
             return;
         }
         JSONArray array = con.respClient(id);
-        if (array == null) {
-            resp.setStatus(resp.SC_NOT_MODIFIED);
+        if (array != null) {
+            out.print(array);
             return;
         }
-        out.print(array);
+        AsyncContext asyncContext = req.startAsync();
+        asyncContext.setTimeout(1000000);
+        asyncContext.addListener(new AsyncListener() {
+            public void onComplete(AsyncEvent asyncEvent) throws IOException {
+
+            }
+
+            public void onTimeout(AsyncEvent asyncEvent) throws IOException {
+
+            }
+
+            public void onError(AsyncEvent asyncEvent) throws IOException {
+
+            }
+
+            public void onStartAsync(AsyncEvent asyncEvent) throws IOException {
+
+            }
+        });
+        longPolling.addAsync(id, asyncContext);
     }
 
     @Override
@@ -110,5 +139,40 @@ public class ChatListener extends HttpServlet {
             }
         }
         con.addMail(id, jObject);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Cookie[] massCook = req.getCookies();
+        int id = -1;
+        for (Cookie c : massCook) {
+            if (c.getName().equals("user")) {
+                id = Integer.parseInt(c.getValue());
+            }
+        }
+        if (id == -1)
+            return;
+        StringBuffer js = new StringBuffer();
+        String line;
+        try {
+            BufferedReader reader = req.getReader();
+            while ((line = reader.readLine()) != null)
+                js.append(line);
+        } catch (Exception e) {
+        }
+
+        JSONObject jObject = new JSONObject();
+        try {
+            jObject = (JSONObject) jsonParser.parse(js.toString());
+        } catch (ParseException e) {
+        }
+        int dialogID = Integer.parseInt(jObject.get("dialogID").toString());
+        int mailID = Integer.parseInt(jObject.get("mailID").toString());
+        con.deleteMail(id, dialogID, mailID);
+    }
+
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doOptions(req, resp);
     }
 }
