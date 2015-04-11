@@ -1,9 +1,3 @@
-function uniqueID() {
-    var date = Date.now();
-    var random = Math.random() * Math.random();
-
-    return Math.floor(date * random).toString();
-};
 var mailList = [];
 function run() {
     startServer();
@@ -55,22 +49,25 @@ function sendEmail() {
     var dialogID = document.getElementsByClassName("partner")[0].getAttribute("dialogID");
     var task = createTask(name, s, dialogID);
     var m = createItem(task);
-    sendServlet(task);
-    mailList.push(task);
+    sendServlet(task, m, mailList.length);
     e.appendChild(m);
+    mailList.push(task);
     e.scrollTop = e.scrollHeight;
     var messages = document.getElementsByClassName("mail");
     messages[messages.length - 1].addEventListener("mouseover", mouseOver);
     messages[messages.length - 1].addEventListener("mouseout", mouseOut);
     messages[messages.length - 1].addEventListener("click", renameEmail);
 }
-function sendServlet(task) {
+function sendServlet(task, message, index) {
     var req = new XMLHttpRequest();
     req.open("POST", "/ChatListener");
-    var id = document.getElementsByClassName("partner")[0].getAttribute("dialogID");
-    if (id == -1) {
-        req.onreadystatechange = function () {
-            location.reload();
+    req.onreadystatechange = function () {
+        if (req.status == 4) {
+            if (req.readyState == 200) {
+                var mailID = parseInt(req.responseText);
+                mailList[index].mailID = mailID;
+                message.setAttribute("mailID", mailID);
+            }
         }
     }
     req.send(JSON.stringify(task));
@@ -98,8 +95,8 @@ function createTask(user, mailText, ID) {
     return {
         text: mailText,
         userName: user,
-        id: uniqueID(),
-        dialogID: ID
+        dialogID: ID,
+        mailID: -1
     };
 }
 function store(list) {

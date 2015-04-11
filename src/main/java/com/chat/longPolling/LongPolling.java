@@ -6,6 +6,7 @@ import org.json.simple.JSONObject;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 
 public class LongPolling {
@@ -27,10 +28,10 @@ public class LongPolling {
             response.setCharacterEncoding("UTF-8");
             JSONArray array = new JSONArray();
             array.add(object);
-            byte[] arrayByte = array.toJSONString().getBytes();
-            response.setContentLength(arrayByte.length);
             try {
-                response.getOutputStream().write(arrayByte);
+                PrintWriter out = response.getWriter();
+                out.print(array);
+                out.flush();
             } catch (IOException e) {
             }
             asyncContext.complete();
@@ -62,11 +63,10 @@ public class LongPolling {
             response.setCharacterEncoding("UTF-8");
             JSONObject object = new JSONObject();
             object.put("update", "1");
-
-            byte[] arrayByte = object.toJSONString().getBytes();
-            response.setContentLength(arrayByte.length);
             try {
-                response.getOutputStream().write(arrayByte);
+                PrintWriter out = response.getWriter();
+                out.print(object);
+                out.flush();
             } catch (IOException e) {
             }
             asyncContext.complete();

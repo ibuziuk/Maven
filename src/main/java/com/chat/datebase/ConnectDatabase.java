@@ -278,6 +278,7 @@ public class ConnectDatabase {
                     JSONObject object = new JSONObject();
                     object.put("userName", userName(resultSet.getInt("userID")));
                     object.put("dialogID", dialogID);
+                    object.put("mailID", resultSet.getInt("mailID"));
                     object.put("text", (resultSet.getString("text")));
                     array.add(object);
                 }

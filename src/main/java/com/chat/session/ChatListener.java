@@ -138,7 +138,9 @@ public class ChatListener extends HttpServlet {
                 }
             }
         }
-        con.addMail(id, jObject);
+        PrintWriter out = resp.getWriter();
+        out.print(con.addMail(id, jObject));
+        out.flush();
     }
 
     @Override
