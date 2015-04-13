@@ -19,7 +19,7 @@ public class RegServlet extends HttpServlet {
         ConnectDatabase con = new ConnectDatabase();
         String login = req.getParameter("user");
         String psw = req.getParameter("pwd");
-        if(con.addUser(login, psw)){
+        if (con.addUser(login, psw)) {
             resp.sendRedirect("index.html");
         } else {
             RequestDispatcher rd = getServletContext().getRequestDispatcher("/index.html");

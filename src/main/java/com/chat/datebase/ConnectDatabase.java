@@ -3,6 +3,7 @@ package com.chat.datebase;
 import com.chat.longPolling.LongPolling;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
@@ -13,8 +14,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import org.springframework.security.crypto.bcrypt.*;
 
 public class ConnectDatabase {
     private Connection connectBase = null;
@@ -78,11 +77,11 @@ public class ConnectDatabase {
     public boolean addUser(String log, String psw) {
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT * FROM users WHERE login = '"+log+"'");
-            if(rs.next()){
+            ResultSet rs = st.executeQuery("SELECT * FROM users WHERE login = '" + log + "'");
+            if (rs.next()) {
                 return false;
             }
-            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + BCrypt.hashpw(psw,BCrypt.gensalt()) + "')");
+            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + BCrypt.hashpw(psw, BCrypt.gensalt()) + "')");
         } catch (SQLException e) {
         }
         return true;
@@ -91,9 +90,9 @@ public class ConnectDatabase {
     public int containsUser(String log, String psw) {
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log +"'");
+            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log + "'");
             while (rs.next()) {
-                if(BCrypt.checkpw(psw,rs.getString("psw"))){
+                if (BCrypt.checkpw(psw, rs.getString("psw"))) {
                     int t = rs.getInt("userID");
                     return t;
                 }
@@ -177,14 +176,14 @@ public class ConnectDatabase {
     }
 
     public void deleteMail(int userID, int dialogID, int mailID) {
-        changeMail(userID,dialogID,mailID,MESSEGE_DELETE,1);
+        changeMail(userID, dialogID, mailID, MESSEGE_DELETE, 1);
     }
 
     public void putMail(int userID, int dialogID, int mailID, String text) {
-        changeMail(userID,dialogID,mailID,text,2);
+        changeMail(userID, dialogID, mailID, text, 2);
     }
 
-    public void  changeMail(int userID, int dialogID, int mailID, String text, int status) {
+    public void changeMail(int userID, int dialogID, int mailID, String text, int status) {
         try {
             Statement st = connectBase.createStatement();
             st.executeUpdate("UPDATE mails SET text ='" + text + "' , status = 1 " +
@@ -210,6 +209,7 @@ public class ConnectDatabase {
         } catch (SQLException e) {
         }
     }
+
     public JSONArray respUser(int id) {
         timingMails.remove(id);
         timingDialog.remove(id);

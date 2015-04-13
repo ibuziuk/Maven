@@ -202,7 +202,7 @@ public class ChatListener extends HttpServlet {
         int dialogID = Integer.parseInt(jObject.get("dialogID").toString());
         int mailID = Integer.parseInt(jObject.get("mailID").toString());
         String text = (String) jObject.get("text");
-        con.putMail(id, dialogID, mailID,text);
+        con.putMail(id, dialogID, mailID, text);
     }
 
     @Override

@@ -35,7 +35,7 @@ function renameEmail(event) {
     }
 }
 function onKeyDown(event) {
-    if(event.keyCode == 13 && event.shiftKey) {
+    if (event.keyCode == 13 && event.shiftKey) {
         sendEmail();
         if (event.stopPropagation) {
             event.stopPropagation()
@@ -125,7 +125,7 @@ function upload(allMail) {
         if (allMail[i].dialogID == t && allMail[i].userName != null) {
             var m = createItem(allMail[i]);
             e.appendChild(m);
-            if(allMail[i].userName == userName ) {
+            if (allMail[i].userName == userName) {
                 addListener(m);
             }
         }
@@ -155,7 +155,7 @@ function deleteMail(mail) {
     addListener(mail);
 }
 function deleteMailServer(mailID, dialogID) {
-    var task = createTask(0,0,dialogID,mailID);
+    var task = createTask(0, 0, dialogID, mailID);
     var req = new XMLHttpRequest();
     req.open("DELETE", "/ChatListener");
     req.send(JSON.stringify(task));
@@ -168,7 +168,7 @@ function changeMail(mail, text) {
     changeMailServer(mailID, dialogID, text);
 }
 function changeMailServer(mailID, dialogID, text) {
-    var task = createTask("0",text,dialogID,mailID);
+    var task = createTask("0", text, dialogID, mailID);
     var req = new XMLHttpRequest();
     req.open("PUT", "/ChatListener");
     req.send(JSON.stringify(task));
@@ -192,9 +192,9 @@ function connectServ() {
                     if (items.update == 1) {
                         startServer();
                     }
-                    else if(items[0].status == 1 || items[0].status == 2){
-                       changeMailInHistory(items[0].dialogID, items[0].mailID, items[0].text, items[0].status);
-                    }  else {
+                    else if (items[0].status == 1 || items[0].status == 2) {
+                        changeMailInHistory(items[0].dialogID, items[0].mailID, items[0].text, items[0].status);
+                    } else {
                         mailList.push(items);
                         upload(items);
                     }
@@ -211,10 +211,10 @@ function connectServ() {
     }
 }
 function changeMailInHistory(dialogID, mailID, text, status) {
-    var i = getIndexElement(dialogID,mailID)
+    var i = getIndexElement(dialogID, mailID)
     mailList[i].text = text;
     mailList[i].status = status;
-    if(dialogID == document.getElementsByClassName("partner")[0].getAttribute("dialogID")){
+    if (dialogID == document.getElementsByClassName("partner")[0].getAttribute("dialogID")) {
         uploadAllMail(mailList);
     }
 }
