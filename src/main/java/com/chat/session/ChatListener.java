@@ -109,6 +109,9 @@ public class ChatListener extends HttpServlet {
             jObject = (JSONObject) jsonParser.parse(js.toString());
         } catch (ParseException e) {
         }
+        if (jObject.containsKey("test")) {
+            return;
+        }
         if (jObject.containsKey("flag")) {
             String str = jObject.get("flag").toString();
             if (str != null && str.equals("1")) {

@@ -1,7 +1,7 @@
 var mailList = [];
 function run() {
     startServer();
-    connectServ();
+    testServer();
 }
 function mouseOut() {
     for (var j = 0; j < this.childNodes.length; j++) {
@@ -180,12 +180,10 @@ function connectServ() {
     req.onreadystatechange = function () {
         if (req.readyState == 4) {
             var elem = document.getElementsByClassName("circle")[0];
-            if (req.status == 0) {
-                elem.style.backgroundColor = 'green';
-                connectServ();
-            }
+            var textarea = document.getElementsByName("email")[0];
             if (req.status == 200) {
                 connectServ();
+                changeTextArea(textarea);
                 elem.style.backgroundColor = 'green';
                 var items = JSON.parse(req.responseText);
                 if (items != null) {
@@ -199,15 +197,53 @@ function connectServ() {
                         upload(items);
                     }
                 }
+                return;
+            }
+            else {
+                if (textarea.readOnly == false) {
+                    textarea.readOnly = true;
+                    textarea.backgroundColor = 'red';
+                    textarea.value = "server is down, wait a bit";
+                }
+                elem.style.backgroundColor = 'red';
+                window.setTimeout(testServer, 1000);
+                return;
+            }
+        }
+    }
+}
+function testServer() {
+    var req = new XMLHttpRequest();
+    req.open("POST", "/ChatListener");
+    req.send("{\"test\":1}");
+    req.onreadystatechange = function () {
+        if (req.readyState == 4) {
+            var elem = document.getElementsByClassName("circle")[0];
+            var textarea = document.getElementsByName("email")[0];
+            if (req.status == 200) {
+                connectServ();
+                changeTextArea(textarea);
                 elem.style.backgroundColor = 'green';
                 return;
             }
             else {
+                if (textarea.readOnly == false) {
+                    textarea.readOnly = true;
+                    textarea.backgroundColor = 'red';
+                    textarea.value = "server is down, wait a bit";
+                }
                 elem.style.backgroundColor = 'red';
-                window.setTimeout(connectServ, 1000);
+                window.setTimeout(testServer, 1000);
                 return;
             }
         }
+    }
+}
+function changeTextArea(textArea) {
+    if (textArea.readOnly == true) {
+        textArea.readOnly = false;
+        textArea.backgroundColor = "white";
+        textArea.value = "";
     }
 }
 function changeMailInHistory(dialogID, mailID, text, status) {
