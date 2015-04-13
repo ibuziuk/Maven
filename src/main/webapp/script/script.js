@@ -34,43 +34,58 @@ function renameEmail(event) {
         deleteMail(this);
     }
 }
+function onKeyDown(event) {
+    if(event.keyCode == 13 && event.shiftKey) {
+        sendEmail();
+        if (event.stopPropagation) {
+            event.stopPropagation()
+        } else {
+            event.cancelBubble = true
+        }
+        document.getElementsByName("email")[0].value = "";
+    }
+}
 function sendEmail() {
     var s = '';
-    var massString = document.getElementsByName("email")[0].value.split('\n');
+    var email = document.getElementsByName("email")[0];
+    var massString = email.value.split('\n');
     for (var i = 0; i < massString.length; i++) {
         s += massString[i];
         if (i != massString.length - 1) {
             s += "<br>";
         }
     }
-    document.getElementsByName("email")[0].value = "";
+    email.value = "";
     var name = document.getElementById("nameUser").textContent;
     var e = document.getElementsByClassName("mailHistory")[0];
     var dialogID = document.getElementsByClassName("partner")[0].getAttribute("dialogID");
-    var task = createTask(name, s, dialogID);
+    var task = createTask(name, s, dialogID, -1);
     var m = createItem(task);
     sendServlet(task, m, mailList.length);
     e.appendChild(m);
     mailList.push(task);
     e.scrollTop = e.scrollHeight;
-    var messages = document.getElementsByClassName("mail");
-    messages[messages.length - 1].addEventListener("mouseover", mouseOver);
-    messages[messages.length - 1].addEventListener("mouseout", mouseOut);
-    messages[messages.length - 1].addEventListener("click", renameEmail);
+    var messages = document.getElementsByClassName("mail")
+    addListener(messages[messages.length - 1]);
+}
+function addListener(message) {
+    message.addEventListener("mouseover", mouseOver);
+    message.addEventListener("mouseout", mouseOut);
+    message.addEventListener("click", renameEmail);
 }
 function sendServlet(task, message, index) {
     var req = new XMLHttpRequest();
-    req.open("POST", "/ChatListener");
+    req.open("POST", "/ChatListener", true);
+    req.send(JSON.stringify(task));
     req.onreadystatechange = function () {
-        if (req.status == 4) {
-            if (req.readyState == 200) {
+        if (req.readyState == 4) {
+            if (req.status == 200) {
                 var mailID = parseInt(req.responseText);
                 mailList[index].mailID = mailID;
                 message.setAttribute("mailID", mailID);
             }
         }
     }
-    req.send(JSON.stringify(task));
 }
 function createItem(task) {
     var temp = document.createElement('div');
@@ -85,37 +100,24 @@ function createItem(task) {
     return temp.firstChild;
 }
 function updateMail(divItem, task) {
-    var text = divItem.lastChild;
-    text.innerHTML = task.text;
-    var name = divItem.getElementsByClassName("nameUser")[0];
-    name.innerHTML = task.userName;
-    divItem.setAttribute('dialogID', task.id);
+    divItem.lastChild.innerHTML = task.text;
+    divItem.getElementsByClassName("nameUser")[0].innerHTML = task.userName;
+    divItem.setAttribute('dialogID', task.dialogID);
+    divItem.setAttribute("mailID", task.mailID);
 }
-function createTask(user, mailText, ID) {
+function createTask(user, text, dialogID, mailID) {
     return {
-        text: mailText,
+        text: text,
         userName: user,
-        dialogID: ID,
-        mailID: -1
+        dialogID: dialogID,
+        mailID: mailID,
+        status: 0
     };
-}
-function store(list) {
-    if (typeof(Storage) == "undefined") {
-        alert('localStorage is not accessible');
-        return;
-    }
-    localStorage.setItem("taskList", JSON.stringify(list))
-}
-function storeUser(user) {
-    if (typeof(Storage) == "undefined") {
-        alert('localStorage is not accessible');
-        return;
-    }
-    localStorage.setItem("username", user);
 }
 function upload(allMail) {
     var e = document.getElementsByClassName("mailHistory")[0];
     var t = document.getElementsByClassName("partner")[0].getAttribute("dialogID");
+    var userName = document.getElementById("nameUser").innerHTML;
     for (var i = 0; i < allMail.length; i++) {
         if (allMail != mailList) {
             mailList.push(allMail[i]);
@@ -123,9 +125,9 @@ function upload(allMail) {
         if (allMail[i].dialogID == t && allMail[i].userName != null) {
             var m = createItem(allMail[i]);
             e.appendChild(m);
-            m.addEventListener("mouseover", mouseOver);
-            m.addEventListener("mouseout", mouseOut);
-            m.addEventListener("click", renameEmail);
+            if(allMail[i].userName == userName ) {
+                addListener(m);
+            }
         }
     }
     e.scrollTop = e.scrollHeight;
@@ -135,30 +137,41 @@ function uploadAllMail(allMail) {
     e.innerHTML = "";
     upload(allMail);
 }
-function deleteMail(mail) {
-    var index = -1;
-    var r = mail.getAttribute("data-task-id");
+function getIndexElement(dialogID, mailID) {
     for (var i = 0; mailList.length; i++) {
-        if (mailList[i].id == parseInt(r)) {
-            index = i;
-            break;
+        if (mailList[i].mailID == mailID && mailList[i].dialogID == dialogID) {
+            return i;
         }
     }
-    mailList.splice(index, 1);
-    store(mailList);
-    mail.parentNode.removeChild(mail);
+}
+function deleteMail(mail) {
+    var mailID = parseInt(mail.getAttribute("mailID"));
+    var dialogID = parseInt(mail.getAttribute("dialogID"));
+    var i = getIndexElement(dialogID, mailID);
+    mailList[i].text = "message has been delete";
+    mailList[i].status = 1;
+    mail.getElementsByClassName("emailText")[0].innerHTML = "MESSAGE HAS BEEN DELETE";
+    deleteMailServer(mailID, dialogID);
+    addListener(mail);
+}
+function deleteMailServer(mailID, dialogID) {
+    var task = createTask(0,0,dialogID,mailID);
+    var req = new XMLHttpRequest();
+    req.open("DELETE", "/ChatListener");
+    req.send(JSON.stringify(task));
 }
 function changeMail(mail, text) {
-    var index = -1;
-    var r = mail.getAttribute("data-task-id");
-    for (var i = 0; mailList.length; i++) {
-        if (mailList[i].id == parseInt(r)) {
-            index = i;
-            break;
-        }
-    }
+    var dialogID = parseInt(mail.getAttribute("dialogID"));
+    var mailID = parseInt(mail.getAttribute("mailID"));
+    var index = getIndexElement(dialogID, mailID);
     mailList[index].text = text;
-    store(mailList);
+    changeMailServer(mailID, dialogID, text);
+}
+function changeMailServer(mailID, dialogID, text) {
+    var task = createTask("0",text,dialogID,mailID);
+    var req = new XMLHttpRequest();
+    req.open("PUT", "/ChatListener");
+    req.send(JSON.stringify(task));
 }
 function connectServ() {
     var req = new XMLHttpRequest();
@@ -179,19 +192,30 @@ function connectServ() {
                     if (items.update == 1) {
                         startServer();
                     }
-                    else {
+                    else if(items[0].status == 1 || items[0].status == 2){
+                       changeMailInHistory(items[0].dialogID, items[0].mailID, items[0].text, items[0].status);
+                    }  else {
                         mailList.push(items);
                         upload(items);
                     }
                 }
+                elem.style.backgroundColor = 'green';
                 return;
             }
             else {
                 elem.style.backgroundColor = 'red';
-                window.setTimeout(connectServ, 100);
+                window.setTimeout(connectServ, 1000);
                 return;
             }
         }
+    }
+}
+function changeMailInHistory(dialogID, mailID, text, status) {
+    var i = getIndexElement(dialogID,mailID)
+    mailList[i].text = text;
+    mailList[i].status = status;
+    if(dialogID == document.getElementsByClassName("partner")[0].getAttribute("dialogID")){
+        uploadAllMail(mailList);
     }
 }
 function startServer() {
@@ -252,8 +276,7 @@ function updateFriend(items) {
     for (var i = 0; i < items.length; i++) {
         var temp = document.createElement("div");
         temp.innerHTML = items[i].name;
-        var flag = items[i].flag;
-        if (flag == "1") {
+        if (items[i].flag == "1") {
             var user = document.getElementById("nameUser");
             user.innerHTML = items[i].name;
         }
@@ -283,7 +306,7 @@ function updateListMail(items) {
         mailList.push(items[i]);
     }
 }
-function addDialog(event) {
+function addDialog() {
     var userID = this.getAttribute("userID");
     var req = new XMLHttpRequest();
     req.open("POST", "/ChatListener");

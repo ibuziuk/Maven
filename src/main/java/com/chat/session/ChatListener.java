@@ -139,7 +139,8 @@ public class ChatListener extends HttpServlet {
             }
         }
         PrintWriter out = resp.getWriter();
-        out.print(con.addMail(id, jObject));
+        int t = con.addMail(id, jObject);
+        out.print(t);
         out.flush();
     }
 
@@ -171,6 +172,37 @@ public class ChatListener extends HttpServlet {
         int dialogID = Integer.parseInt(jObject.get("dialogID").toString());
         int mailID = Integer.parseInt(jObject.get("mailID").toString());
         con.deleteMail(id, dialogID, mailID);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Cookie[] massCook = req.getCookies();
+        int id = -1;
+        for (Cookie c : massCook) {
+            if (c.getName().equals("user")) {
+                id = Integer.parseInt(c.getValue());
+            }
+        }
+        if (id == -1)
+            return;
+        StringBuffer js = new StringBuffer();
+        String line;
+        try {
+            BufferedReader reader = req.getReader();
+            while ((line = reader.readLine()) != null)
+                js.append(line);
+        } catch (Exception e) {
+        }
+
+        JSONObject jObject = new JSONObject();
+        try {
+            jObject = (JSONObject) jsonParser.parse(js.toString());
+        } catch (ParseException e) {
+        }
+        int dialogID = Integer.parseInt(jObject.get("dialogID").toString());
+        int mailID = Integer.parseInt(jObject.get("mailID").toString());
+        String text = (String) jObject.get("text");
+        con.putMail(id, dialogID, mailID,text);
     }
 
     @Override

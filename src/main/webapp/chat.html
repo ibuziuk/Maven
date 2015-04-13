@@ -33,7 +33,7 @@
         <div class="mailHistory">
         </div>
         <div class="mailInput" align="right">
-            <textarea name="email" placeholder="Введите сообщение"></textarea>
+            <textarea name="email" placeholder="Введите сообщение" onkeydown="onKeyDown(event)" onkeyup="onKeyUp(event)"></textarea>
             <br>
             <button name="send" onclick="sendEmail()">Отправить</button>
         </div>

@@ -14,8 +14,7 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.*;
 
 public class ConnectDatabase {
     private Connection connectBase = null;
@@ -76,38 +75,29 @@ public class ConnectDatabase {
         }
     }
 
-    public void addUser(String log, String psw) {
-        //PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        //String hashedPsw = passwordEncoder.encode(psw);
+    public boolean addUser(String log, String psw) {
         try {
             Statement st = connectBase.createStatement();
-            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + psw + "')");
-            ResultSet rs = st.executeQuery("SELECT last_insert_id() AS last_id FROM mails");
-            rs.next();
-            int lastId = rs.getInt("last_id");
-            ResultSet resultSet = st.executeQuery("SELECT userID FROM users ");
-            while (resultSet.next()) {
-                int id = resultSet.getInt("userID");
-                if (lastId == id)
-                    continue;
-
-                if (!poll.respUpdateContent(id)) {
-                    timingDialog.add(id);
-                }
+            ResultSet rs = st.executeQuery("SELECT * FROM users WHERE login = '"+log+"'");
+            if(rs.next()){
+                return false;
             }
+            st.executeUpdate("INSERT INTO users (login, psw) VALUES('" + log + "','" + BCrypt.hashpw(psw,BCrypt.gensalt()) + "')");
         } catch (SQLException e) {
         }
+        return true;
     }
 
     public int containsUser(String log, String psw) {
-        //PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        //String hashedPsw = passwordEncoder.encode(psw);
         try {
             Statement st = connectBase.createStatement();
-            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log + "' AND psw = '" + psw + "'");
+            ResultSet rs = st.executeQuery("SELECT*FROM users WHERE login = '" + log +"'");
             while (rs.next()) {
-                int t = rs.getInt("userID");
-                return t;
+                if(BCrypt.checkpw(psw,rs.getString("psw"))){
+                    int t = rs.getInt("userID");
+                    return t;
+                }
+                return -1;
             }
         } catch (SQLException e) {
         }
@@ -187,17 +177,25 @@ public class ConnectDatabase {
     }
 
     public void deleteMail(int userID, int dialogID, int mailID) {
+        changeMail(userID,dialogID,mailID,MESSEGE_DELETE,1);
+    }
+
+    public void putMail(int userID, int dialogID, int mailID, String text) {
+        changeMail(userID,dialogID,mailID,text,2);
+    }
+
+    public void  changeMail(int userID, int dialogID, int mailID, String text, int status) {
         try {
             Statement st = connectBase.createStatement();
-            st.executeUpdate("UPDATE mails SET text ='" + MESSEGE_DELETE + "'" +
-                    "WHERE dialogID =" + dialogID + ", mailID =" + mailID);
+            st.executeUpdate("UPDATE mails SET text ='" + text + "' , status = 1 " +
+                    "WHERE dialogID =" + dialogID + " AND mailID =" + mailID);
             ResultSet resultSet = st.executeQuery("SELECT userID FROM users_dialogs WHERE dialogID =" + dialogID);
             while (resultSet.next()) {
                 int id = resultSet.getInt("userID");
                 if (id == userID) {
                     continue;
                 }
-                JSONObject object = poll.respDelete(id, dialogID, mailID, MESSEGE_DELETE);
+                JSONObject object = poll.respDelete(id, dialogID, mailID, text, status);
                 if (object != null) {
                     ArrayList<JSONObject> arrayList = timingMails.get(userID);
                     if (arrayList == null) {
@@ -212,7 +210,6 @@ public class ConnectDatabase {
         } catch (SQLException e) {
         }
     }
-
     public JSONArray respUser(int id) {
         timingMails.remove(id);
         timingDialog.remove(id);
@@ -272,14 +269,15 @@ public class ConnectDatabase {
             while (rt.next()) {
                 int dialogID = rt.getInt("dialogID");
                 Statement statement = connectBase.createStatement();
-                ResultSet resultSet = statement.executeQuery("SELECT userID, mailID, text FROM mails" +
+                ResultSet resultSet = statement.executeQuery("SELECT userID, mailID, text , status FROM mails" +
                         " WHERE dialogID = " + dialogID + " ORDER BY mailID");
                 while (resultSet.next()) {
                     JSONObject object = new JSONObject();
                     object.put("userName", userName(resultSet.getInt("userID")));
                     object.put("dialogID", dialogID);
                     object.put("mailID", resultSet.getInt("mailID"));
-                    object.put("text", (resultSet.getString("text")));
+                    object.put("text", resultSet.getString("text"));
+                    object.put("status", resultSet.getInt("status"));
                     array.add(object);
                 }
             }

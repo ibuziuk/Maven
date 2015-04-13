@@ -42,12 +42,12 @@ public class LongPolling {
         return false;
     }
 
-    public JSONObject respDelete(int id, int dialogID, int mailID, String text) {
+    public JSONObject respDelete(int id, int dialogID, int mailID, String text, int status) {
         JSONObject object = new JSONObject();
         object.put("mailID", mailID);
-        object.put("dialogId", dialogID);
+        object.put("dialogID", dialogID);
         object.put("text", text);
-        object.put("status", 1);
+        object.put("status", status);
         if (respMessage(id, object)) {
             return null;
         } else {

@@ -19,7 +19,7 @@ public class LoginServlet extends HttpServlet {
         String psw = request.getParameter("pwd");
         ConnectDatabase con = new ConnectDatabase();
         int userID = con.containsUser(user, psw);
-        if (userID != 0) {
+        if (userID != -1) {
             Cookie logCookie = new Cookie("user", "" + userID);
             logCookie.setMaxAge(60 * 60);
             response.addCookie(logCookie);
