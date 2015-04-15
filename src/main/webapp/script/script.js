@@ -48,6 +48,9 @@ function onKeyDown(event) {
 function sendEmail() {
     var s = '';
     var email = document.getElementsByName("email")[0];
+    if (email.readOnly == true) {
+        return;
+    }
     var massString = email.value.split('\n');
     for (var i = 0; i < massString.length; i++) {
         s += massString[i];
