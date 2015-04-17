@@ -5,12 +5,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -36,6 +31,16 @@ public class ConnectDatabase {
         return -1;
     }
 
+    private Connection getConnection() {
+        Connection conn = null;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/blackchat", "root", "admin");
+        } catch (Exception e) {
+        }
+        return conn;
+    }
+
     public String userName(int id) {
         try {
             Statement st = connectBase.createStatement();
@@ -51,27 +56,28 @@ public class ConnectDatabase {
     }
 
     public ConnectDatabase(LongPolling poll) {
-        try {
+        /*try {
             InitialContext initContext = new InitialContext();
             DataSource ds = (DataSource) initContext.lookup("java:comp/env/jdbc/blackchat");
             connectBase = ds.getConnection();
         } catch (Exception e) {
 
-        }
-        if (timingDialog == null && timingMails == null) {
-            timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
-            timingDialog = new TreeSet<Integer>();
-        }
+        }*/
+        connectBase = getConnection();
+        timingMails = new TreeMap<Integer, ArrayList<JSONObject>>();
+        timingDialog = new TreeSet<Integer>();
         this.poll = poll;
     }
 
     public ConnectDatabase() {
-        try {
+         /*try {
             InitialContext initContext = new InitialContext();
             DataSource ds = (DataSource) initContext.lookup("java:comp/env/jdbc/blackchat");
             connectBase = ds.getConnection();
         } catch (Exception e) {
-        }
+
+        }*/
+        connectBase = getConnection();
     }
 
     public boolean addUser(String log, String psw) {
